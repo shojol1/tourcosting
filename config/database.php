@@ -5,10 +5,10 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$host = 'aws-0-ap-southeast-1.pooler.supabase.com';
-$port = '6543';
+$host = 'db.xikfgjbhfrsctzpzartc.supabase.co';
+$port = '5432';
 $dbname = 'postgres';
-$user = 'postgres.dvrzghulbaidbmwnnbxv';
+$user = 'postgres';
 $pass = 'Shojol@1122';
 
 try {
