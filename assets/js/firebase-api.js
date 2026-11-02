@@ -18,7 +18,7 @@ const db = firebase.firestore();
 
 // Helper to generate unique integer ID for new items (matches Android int model)
 function generateNumericId() {
-    return Math.floor(Date.now() / 1000) * 1000 + Math.floor(Math.random() * 1000);
+    return Math.floor((Date.now() / 1000) % 100000000) * 1000 + Math.floor(Math.random() * 1000);
 }
 
 const FirebaseApi = {
