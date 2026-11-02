@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="bn" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TourCosting - ট্যুর হিসাব ও কস্টিং ম্যানেজার</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <!-- html2pdf & html2canvas for PDF & JPG Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+
+    <!-- Header Navbar -->
+    <header class="app-header">
+        <div class="container header-content">
+            <div class="logo" id="appLogo" title="৭ বার ক্লিক করে এডমিন মোডে ঢুকুন">
+                <div class="logo-icon">✈️</div>
+                <div class="logo-text">
+                    <h1>TourCosting</h1>
+                    <span>ট্যুর খরচ ও কালেকশন ম্যানেজার</span>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <button id="btnThemeToggle" class="btn btn-secondary btn-sm">🌙 ডার্ক</button>
+                <span id="adminBadge" class="badge badge-viewer">👁️ ভিউয়ার মোড</span>
+                
+                <select id="spinnerTours" class="custom-select">
+                    <option value="">-- লোড হচ্ছে... --</option>
+                </select>
+
+                <button id="btnAdminToggle" class="btn btn-secondary btn-sm">🔐 এডমিন মোড</button>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="app-tabs-container">
+            <div class="container">
+                <div class="app-tabs">
+                    <button class="tab-btn active" data-tab="tabOverview">📊 ওভারভিউ</button>
+                    <button class="tab-btn" data-tab="tabMembers">👥 সদস্যগণ</button>
+                    <button class="tab-btn" data-tab="tabExpenses">💸 খরচের লেজার</button>
+                    <button class="tab-btn" data-tab="tabDonations">🎁 ডোনেশন</button>
+                    <button class="tab-btn" data-tab="tabGallery">📸 অ্যালবাম</button>
+                    <button class="tab-btn" data-tab="tabExport">📑 হিসাব ও রফতানি</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="container" style="flex:1;">
+        
+        <!-- Empty State -->
+        <div id="emptyState" class="card" style="display:none; text-align:center; padding:3rem 1.5rem; margin-top:2rem;">
+            <div style="font-size:3rem; margin-bottom:1rem;">⛵</div>
+            <h2>কোনো সক্রিয় ট্যুর পাওয়া যায়নি</h2>
+            <p style="color:var(--text-muted); margin:0.5rem 0 1.5rem;">নতুন ট্যুরের হিসাব শুরু করতে এডমিন মোডে ট্যুর তৈরি করুন।</p>
+            <button class="btn btn-primary admin-only" onclick="openModal('modalAddTour')">+ নতুন ট্যুর তৈরি করুন</button>
+        </div>
+
+        <!-- Content Area -->
+        <div id="mainContentArea" style="display:none; margin-top:1rem;">
+            
+            <!-- TAB 1: OVERVIEW -->
+            <div id="tabOverview" class="tab-pane active">
+                <div class="tour-banner">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+                        <div>
+                            <h2 id="tvTourName">ট্যুরের নাম</h2>
+                            <p><span id="tvDestination">📍 গন্তব্য: -</span></p>
+                        </div>
+                        <div class="admin-only" style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                            <label class="btn btn-secondary btn-sm" style="cursor:pointer;">
+                                🖼️ ব্যানার পাল্টান
+                                <input type="file" accept="image/*" style="display:none;" onchange="handleBannerCoverPhotoSelect(event)">
+                            </label>
+                            <button class="btn btn-secondary btn-sm" onclick="openEditTourModal()">✏️ ট্যুর এডিট</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteCurrentTour()">🗑️ ট্যুর ডিলেট</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card primary">
+                        <div class="title">👥 মোট সদস্য</div>
+                        <div class="value" id="kpiMemberCount">০ জন</div>
+                    </div>
+                    <div class="stat-card primary">
+                        <div class="title">💰 মোট জমা (মেম্বার কালেকশন)</div>
+                        <div class="value" id="kpiTotalCollections">৳ ০</div>
+                    </div>
+                    <div class="stat-card danger">
+                        <div class="title">💸 মোট খরচ (Total Cost)</div>
+                        <div class="value" id="kpiTotalExpenses">৳ ০</div>
+                    </div>
+                    <div class="stat-card info">
+                        <div class="title">🎁 মোট ডোনেশন (স্পন্সর)</div>
+                        <div class="value" id="kpiTotalDonations">৳ ০</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="title">💳 পকেট থেকে খরচ (Out of Pocket)</div>
+                        <div class="value" id="kpiTotalOutOfPocket">৳ ০</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="title">📊 নিট গ্রুপ কস্ট</div>
+                        <div class="value" id="kpiNetGroupCost">৳ ০</div>
+                    </div>
+                    <div class="stat-card primary">
+                        <div class="title">👤 প্রতি সদস্যের প্রাপ্য অংশ</div>
+                        <div class="value" id="kpiPerPersonShare">৳ ০</div>
+                    </div>
+                    <div class="stat-card primary">
+                        <div class="title">💰 অবশিষ্টাংশ ফান্ড balance</div>
+                        <div class="value" id="kpiRemainingBalance">৳ ০</div>
+                    </div>
+                </div>
+
+                <!-- Out of Pocket Reimbursement Section -->
+                <div id="cardOutOfPocketSection" class="card" style="display:none;">
+                    <div class="card-header">
+                        <h3>💳 পকেট থেকে দেওয়া খরচ ও পরিশোধ</h3>
+                    </div>
+                    <div id="containerOutOfPocketList"></div>
+                </div>
+            </div>
+
+            <!-- TAB 2: MEMBERS -->
+            <div id="tabMembers" class="tab-pane">
+                <div class="card-header" style="margin-bottom:1rem;">
+                    <h2>👥 সদস্যদের জমার বিবরণী</h2>
+                    <div style="display:flex; gap:0.5rem;">
+                        <button class="btn btn-primary admin-only" onclick="openAddCollectionModal()">💰 টাকা জমা নিন</button>
+                        <button class="btn btn-secondary admin-only" onclick="openModal('modalAddMember')">+ মেম্বার যোগ করুন</button>
+                    </div>
+                </div>
+                <div id="containerMembersList"></div>
+            </div>
+
+            <!-- TAB 3: EXPENSES -->
+            <div id="tabExpenses" class="tab-pane">
+                <div class="card-header" style="margin-bottom:1rem;">
+                    <h2>💸 খরচের লেজার</h2>
+                    <button class="btn btn-primary admin-only" onclick="openAddExpenseModal()">+ খরচ যোগ করুন</button>
+                </div>
+                <div class="card">
+                    <div id="containerExpensesList"></div>
+                </div>
+            </div>
+
+            <!-- TAB 4: DONATIONS -->
+            <div id="tabDonations" class="tab-pane">
+                <div class="card-header" style="margin-bottom:1rem;">
+                    <h2>🎁 ডোনেশন / স্পন্সর তালিকা</h2>
+                    <button class="btn btn-primary admin-only" onclick="openAddDonationModal()">+ ডোনেশন যোগ করুন</button>
+                </div>
+                <div class="card">
+                    <div id="containerDonationsList"></div>
+                </div>
+            </div>
+
+            <!-- TAB 5: GALLERY -->
+            <div id="tabGallery" class="tab-pane">
+                <div class="card-header" style="margin-bottom:1rem;">
+                    <h2>📸 ট্যুর ফটো অ্যালবাম (সর্বোচ্চ ৪টি)</h2>
+                    <label class="btn btn-primary admin-only" style="cursor:pointer;">
+                        📷 ছবি তুলুন / সিলেক্ট করুন
+                        <input type="file" accept="image/*" style="display:none;" onchange="handleGalleryPhotoSelect(event)">
+                    </label>
+                </div>
+                <div class="gallery-grid" id="containerGalleryGrid"></div>
+            </div>
+
+            <!-- TAB 6: REPORT EXPORT -->
+            <div id="tabExport" class="tab-pane">
+                <div class="card" style="max-width:600px; margin:0 auto; text-align:center; padding:2rem;">
+                    <h2>📥 সম্পূর্ণ অ-টু-জেড হিসাব রিপোর্ট রফতানি</h2>
+                    <p style="color:var(--text-muted); margin:0.5rem 0 1.5rem;">মেম্বার জমা, মোট কালেকশন, ডোনেশন, সকল খরচ ও অবশিষ্টাংশ টাকা রফতানি করুন।</p>
+                    
+                    <div class="form-group" style="text-align:left;">
+                        <label>📄 রফতানির ফাইল ফরম্যাট নির্বাচন করুন:</label>
+                        <select id="selectExportFormat" class="form-control">
+                            <option value="pdf">📄 PDF নথি (.pdf)</option>
+                            <option value="jpg">🖼️ JPG ছবি (.jpg)</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-primary" style="width:100%; margin-top:1rem;" onclick="exportReportFile()">📥 রফতানি ও ডাউনলোড করুন</button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Floating Action Button -->
+    <button class="fab admin-only" onclick="openAddCollectionModal()" title="টাকা জমা নিন">+</button>
+
+    <!-- MODAL 1: ADD TOUR -->
+    <div id="modalAddTour" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⛵ নতুন ট্যুর তৈরি করুন</h3>
+                <span class="modal-close" data-close>&times;</span>
+            </div>
+            <form id="formAddTour">
+                <div class="form-group">
+                    <label>ট্যুরের নাম:</label>
+                    <input type="text" id="inputTourName" class="form-control" placeholder="যেমন: কক্সবাজার ভ্রমণ ২০২৬" required>
+                </div>
+                <div class="form-group">
+                    <label>গন্তব্য:</label>
+                    <input type="text" id="inputTourDest" class="form-control" placeholder="যেমন: কক্সবাজার" required>
+                </div>
+                <div class="form-group">
+                    <label>ব্যনার ব্যাকগ্রাউন্ড ছবি:</label>
+                    <label class="btn btn-secondary" style="cursor:pointer; width:100%; text-align:center;">
+                        📷 ফোন/কম্পিউটার থেকে ব্যানার সিলেক্ট করুন
+                        <input type="file" accept="image/*" style="display:none;" id="fileAddTourBanner" onchange="handleModalBannerPhotoSelect(event, 'previewAddBanner')">
+                    </label>
+                    <img id="previewAddBanner" style="max-height:120px; border-radius:8px; display:none; margin-top:8px; width:100%; object-fit:cover;">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%; margin-top:0.5rem;">তৈরি করুন</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 1.5: EDIT TOUR -->
+    <div id="modalEditTour" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✏️ ট্যুর তথ্য এডিট করুন</h3>
+                <span class="modal-close" data-close>&times;</span>
+            </div>
+            <form id="formEditTour">
+                <div class="form-group">
+                    <label>ট্যুরের নাম:</label>
+                    <input type="text" id="inputEditTourName" class="form-control" placeholder="যেমন: কক্সবাজার ভ্রমণ ২০২৬" required>
+                </div>
+                <div class="form-group">
+                    <label>গন্তব্য:</label>
+                    <input type="text" id="inputEditTourDest" class="form-control" placeholder="যেমন: কক্সবাজার" required>
+                </div>
+                <div class="form-group">
+                    <label>ব্যনার ব্যাকগ্রাউন্ড ছবি:</label>
+                    <label class="btn btn-secondary" style="cursor:pointer; width:100%; text-align:center;">
+                        📷 নতুন ব্যানার ছবি সিলেক্ট করুন
+                        <input type="file" accept="image/*" style="display:none;" id="fileEditTourBanner" onchange="handleModalBannerPhotoSelect(event, 'previewEditBanner')">
+                    </label>
+                    <img id="previewEditBanner" style="max-height:120px; border-radius:8px; display:none; margin-top:8px; width:100%; object-fit:cover;">
+                </div>
+                <div class="form-group">
+                    <label>ট্যুর স্ট্যাটাস:</label>
+                    <select id="selectEditTourStatus" class="form-control">
+                        <option value="active">🟢 চলতি (Active)</option>
+                        <option value="completed">🏁 সম্পন্ন (Completed)</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%;">আপডেট করুন</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: ADD MEMBER -->
+    <div id="modalAddMember" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>👤 নতুন সদস্য যোগ করুন</h3>
+                <span class="modal-close" data-close>&times;</span>
+            </div>
+            <form id="formAddMember">
+                <div class="form-group">
+                    <label>সদস্যের নাম:</label>
+                    <input type="text" id="inputMemberName" class="form-control" placeholder="যেমন: রাকিব হাসান" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%;">যোগ করুন</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: ADD COLLECTION -->
+    <div id="modalAddCollection" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>💰 টাকা জমা নেওয়া</h3>
+                <span class="modal-close" data-close>&times;</span>
+            </div>
+            <form id="formAddCollection">
+                <div class="form-group">
+                    <label>সদস্য নির্বাচন করুন:</label>
+                    <select id="selectMemberCollection" class="form-control" required></select>
+                </div>
+                <div class="form-group">
+                    <label>জমার পরিমাণ (টাকা):</label>
+                    <input type="number" id="inputCollectionAmount" class="form-control" placeholder="১০০০" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%;">জমা সম্পন্ন করুন</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3.5: MANAGE / EDIT MEMBER COLLECTIONS -->
+    <div id="modalManageCollections" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="tvManageCollectionsTitle">📜 জমার ইতিহাস ও এডিট</h3>
+                <span class="modal-close" data-close>&times;</span>
+            </div>
+            <div id="containerMemberCollectionHistory"></div>
+        </div>
+    </div>
+
+    <!-- MODAL 3.6: EDIT SINGLE COLLECTION -->
+    <div id="modalEditCollection" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✏️ জমার পরিমাণ এডিট করুন</h3>
+                <span class="modal-close" data-close>&times;</span>
+            </div>
+            <form id="formEditCollection">
+                <input type="hidden" id="inputEditCollectionId">
+                <div class="form-group">
+                    <label>নতুন জমার পরিমাণ (টাকা):</label>
+                    <input type="number" id="inputEditCollectionAmount" class="form-control" placeholder="১০০০" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%;">আপডেট করুন</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 4: ADD/EDIT EXPENSE -->
+    <div id="modalAddExpense" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>💸 খরচের এন্ট্রি</h3>
+                <span class="modal-close" data-close>&times;</span>
+            </div>
+            <form id="formAddExpense">
+                <input type="hidden" id="inputExpenseId">
+                <div class="form-group">
+                    <label>খরচের খাত / বিবরণ:</label>
+                    <input type="text" id="inputExpenseTitle" class="form-control" placeholder="যেমন: হোটেল বুকিং, বাস ভাড়া" required>
+                </div>
+                <div class="form-group">
+                    <label>টাকার পরিমাণ:</label>
+                    <input type="number" id="inputExpenseAmount" class="form-control" placeholder="৫০০" required>
+                </div>
+                <div class="form-group">
+                    <label>টাকা কে দিয়েছে?</label>
+                    <select id="selectExpensePaidBy" class="form-control"></select>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%;">সংরক্ষণ করুন</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 5: ADD/EDIT DONATION -->
+    <div id="modalAddDonation" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🎁 ডোনেশন / স্পন্সর</h3>
+                <span class="modal-close" data-close>&times;</span>
+            </div>
+            <form id="formAddDonation">
+                <input type="hidden" id="inputDonationId">
+                <div class="form-group">
+                    <label>দাতা / স্পন্সরের নাম:</label>
+                    <input type="text" id="inputDonorName" class="form-control" placeholder="যেমন: মিজান ভাই" required>
+                </div>
+                <div class="form-group">
+                    <label>টাকার পরিমাণ:</label>
+                    <input type="number" id="inputDonationAmount" class="form-control" placeholder="২০০০" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%;">সংরক্ষণ করুন</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 6: ROTATE & UPLOAD PHOTO -->
+    <div id="modalRotateUpload" class="modal">
+        <div class="modal-content" style="text-align:center;">
+            <div class="modal-header">
+                <h3>📸 ছবি প্রিভিউ ও রোটেশন</h3>
+                <span class="modal-close" data-close>&times;</span>
+            </div>
+            <div style="max-height:260px; overflow:hidden; border-radius:12px; margin:1rem 0; background:#000;">
+                <img id="previewUploadImage" src="" style="max-width:100%; max-height:260px; transition:transform 0.3s ease;">
+            </div>
+            <div class="form-group">
+                <input type="text" id="inputPhotoCaption" class="form-control" placeholder="ক্যাপশন (ঐচ্ছিক)">
+            </div>
+            <div style="display:flex; gap:0.5rem;">
+                <button type="button" class="btn btn-secondary" onclick="rotateUploadImage()" style="flex:1;">🔄 ৯০° ঘুরান</button>
+                <button type="button" class="btn btn-primary" onclick="confirmGalleryUpload()" style="flex:1;">📤 আপলোড করুন</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 7: FULL IMAGE VIEWER -->
+    <div id="modalFullViewer" class="modal">
+        <div class="modal-content" style="max-width:800px; text-align:center; background:#000; color:#fff;">
+            <div class="modal-header" style="border:none;">
+                <h3 id="fullViewerCaption">ছবি</h3>
+                <span class="modal-close" data-close style="color:#fff;">&times;</span>
+            </div>
+            <img id="fullViewerImage" src="" style="max-width:100%; max-height:80vh; object-fit:contain;">
+        </div>
+    </div>
+
+    <!-- Hidden Export Container -->
+    <div id="modalExportReport" class="modal">
+        <div class="modal-content" style="max-width:800px; max-height:90vh; overflow-y:auto;">
+            <div class="modal-header">
+                <h3>📄 রফতানি করা হচ্ছে...</h3>
+                <span class="modal-close" data-close>&times;</span>
+            </div>
+            <div id="reportExportContainer"></div>
+        </div>
+    </div>
+
+    <!-- Firebase Compat SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <!-- Custom Scripts -->
+    <script src="assets/js/firebase-api.js?v=8"></script>
+    <script src="assets/js/app.js?v=8"></script>
+</body>
+</html>
